@@ -2,7 +2,6 @@ import re, sys
 import pandas as pd
 
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -15,12 +14,19 @@ def startDriver():
     return driver
 
 def parseAddress(address):
-    regex = re.compile('(.+),|Apt|#|[0-9]+[a-zA-Z]+')
-    if (regex.search(address)):
-        cleanAddress = regex.search(address).group(1)
+    print(address)
+    regex = re.compile('(?:(?!,|Apt|APT|Apartment|#).)*')
+    regexAlt = re.compile('(?:(?![#0-9]+[a-zA-Z]+$).)*')
+    if (regex.search(address)): # slice off apartment numbers
+        cleanAddress = regex.search(address).group(0)
         return re.split(' ', cleanAddress, 1)
-    else:
+    elif (regexAlt.search(address)):
+        cleanAddress = regex.search(address).group(0)
+        return re.split(' ', cleanAddress, 1)
+    elif (re.search('^[pP]', address)): # PO Box
         return None
+    else:
+        return re.split(' ', address, 1)
 
 def getEdAd(houseNumber, streetName, zip, driver):
     driver.get(url)
@@ -28,36 +34,39 @@ def getEdAd(houseNumber, streetName, zip, driver):
     WebDriverWait(driver, 5).until(elementPresent)
     driver.find_element_by_id('txtHouseNumber').send_keys(houseNumber)
     driver.find_element_by_id('txtStreetName').send_keys(streetName)
-    driver.find_element_by_id('txtZipcode').send_keys(zip)
+    driver.find_element_by_id('txtZipcode').send_keys(str(zip))
     driver.find_element_by_id('btnSearch').send_keys(Keys.RETURN)
     try:
-        driver.find_element_by_id('search-error')
-        return ''
-    except NoSuchElementException:
-        elementPresent = EC.presence_of_element_located((By.ID, 'election_district'))
+        elementPresent = EC.visibility_of_element_located((By.ID, 'election_district'))
         WebDriverWait(driver, 5).until(elementPresent)
         district = driver.find_element_by_id('election_district').text
+        print('District: ' + district)
         return district
+    except:
+        return ''
 
 def loopOverPeople(people, driver):
     people['EDAD'] = ''
     for index, person in people.iterrows():
-        parsedAddress = parseAddress(people['Mailing.Address.Line.1'])
-        if (parsedAddress):
-            district = getEdAd(
-                parsedAddress[0],
-                parsedAddress[1],
-                people['Mailing.Zip.Postal.Code'],
-                driver
-            )
-            person['EDAD'] = district
+        try:
+            parsedAddress = parseAddress(person['MailingStreet'])
+            if (parsedAddress):
+                district = getEdAd(
+                    parsedAddress[0],
+                    parsedAddress[1],
+                    person['Zip'],
+                    driver
+                )
+                people.at[index, 'EDAD'] = district
+        except:
+            pass
     return people
 
 def scrapeEdAd():
-    people = pd.read_csv('../files/' + sys.argv[1])
+    people = pd.read_csv('./files/' + sys.argv[1])
     driver = startDriver()
     peopleAppended = loopOverPeople(people, driver)  
-    peopleAppended.to_csv('../files/peopleAppended.csv', index = False)
+    peopleAppended.to_csv('./files/peopleAppended.csv', index = False)
     driver.quit()
 
 if __name__ == "__main__":
