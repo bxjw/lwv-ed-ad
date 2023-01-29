@@ -15,16 +15,16 @@ class LWVLookup:
 
     def parseAddress(self, address):
         print(address)
-        regex = re.compile('(?:(?!,|Apt|APT|Apartment|#|-).)*')
-        regexAlt = re.compile('(?:(?![#0-9]+[a-zA-Z]+$).)*')
+        regex = re.compile(',|Apt|APT|Apartment|#')
+        regexAlt = re.compile('[#0-9]+[a-zA-Z]*$')
         if (regex.search(address)): # slice off apartment numbers
-            cleanAddress = regex.search(address).group(0)
-            return re.split(' ', cleanAddress, 1)
-        elif (regexAlt.search(address)):
-            cleanAddress = regex.search(address).group(0)
+            cleanAddress = re.compile('(?:(?!,|Apt|APT|Apartment|#).)*').search(address).group(0)
             return re.split(' ', cleanAddress, 1)
         elif (re.search('^[pP]', address)): # PO Box
             return None
+        elif (regexAlt.search(address)):
+            cleanAddress = re.compile('(?:(?![#0-9]+[a-zA-Z]*$).)*').search(address).group(0)
+            return re.split(' ', cleanAddress, 1)
         else:
             return re.split(' ', address, 1)
 
@@ -51,12 +51,12 @@ class LWVLookup:
         self.people['senate'] = None
         for index, person in self.people.iterrows():
             try:
-                parsedAddress = self.parseAddress(person['Mailing Street'])
+                parsedAddress = self.parseAddress(person.get('Mailing Street', person.get('MailingStreet')))
                 if (parsedAddress):
                     assembly, senate = self.getDistrict(
                         parsedAddress[0],
                         parsedAddress[1],
-                        person['Mailing Zip/Postal Code'],
+                        person.get('Mailing Zip/Postal Code', person.get('MailingZip')),
                     )
                     self.people.at[index, 'assembly'] = assembly
                     self.people.at[index, 'senate'] = senate
