@@ -15,7 +15,7 @@ class LWVLookup:
 
     def parseAddress(self, address):
         print(address)
-        regex = re.compile('(?:(?!,|Apt|APT|Apartment|#).)*')
+        regex = re.compile('(?:(?!,|Apt|APT|Apartment|#|-).)*')
         regexAlt = re.compile('(?:(?![#0-9]+[a-zA-Z]+$).)*')
         if (regex.search(address)): # slice off apartment numbers
             cleanAddress = regex.search(address).group(0)
@@ -28,7 +28,7 @@ class LWVLookup:
         else:
             return re.split(' ', address, 1)
 
-    def getEdAd(self, houseNumber, streetName, zip):
+    def getDistrict(self, houseNumber, streetName, zip):
         self.driver.get(self.url)
         elementPresent = EC.element_to_be_clickable((By.ID, 'txtHouseNumber'))
         WebDriverWait(self.driver, 5).until(elementPresent)
@@ -39,24 +39,27 @@ class LWVLookup:
         try:
             elementPresent = EC.visibility_of_element_located((By.ID, 'election_district'))
             WebDriverWait(self.driver, 5).until(elementPresent)
-            district = self.driver.find_element(By.ID, 'election_district').text
-            print('District: ' + district)
-            return district
+            assembly = self.driver.find_element(By.ID, 'assembly_district').text
+            senate = self.driver.find_element(By.ID, 'assembly_district').text
+            print(f"assembly {assembly} and senate {senate}")
+            return assembly, senate
         except:
             return ''
 
     def processPeople(self):
-        self.people['EDAD'] = None
+        self.people['assembly'] = None
+        self.people['senate'] = None
         for index, person in self.people.iterrows():
             try:
-                parsedAddress = self.parseAddress(person['MailingStreet'])
+                parsedAddress = self.parseAddress(person['Mailing Street'])
                 if (parsedAddress):
-                    district = self.getEdAd(
+                    assembly, senate = self.getDistrict(
                         parsedAddress[0],
                         parsedAddress[1],
-                        person['MailingZip'],
+                        person['Mailing Zip/Postal Code'],
                     )
-                    self.people.at[index, 'EDAD'] = district
+                    self.people.at[index, 'assembly'] = assembly
+                    self.people.at[index, 'senate'] = senate
             except:
                 pass
         self.people.to_csv('./files/peopleAppended.csv', index = False)
@@ -64,10 +67,10 @@ class LWVLookup:
     def quit(self):
         self.driver.quit()
 
-def scrapeEdAd():
+def scrapeDistrict():
     lwv = LWVLookup('./files/' + sys.argv[1])
     lwv.processPeople()
     lwv.quit()
 
 if __name__ == "__main__":
-    scrapeEdAd()
+    scrapeDistrict()
