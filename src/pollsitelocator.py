@@ -23,7 +23,7 @@ class LWVLookup:
         elif (re.search('^[pP]', address)): # PO Box
             return None
         elif (regexAlt.search(address)):
-            cleanAddress = re.compile('(?:(?![#0-9]+[a-zA-Z]*$).)*').search(address).group(0)
+            cleanAddress = re.compile('(?:(?![a-zA-Z]*[#0-9]+[a-zA-Z]*$).)*').search(address).group(0)
             return re.split(' ', cleanAddress, 1)
         else:
             return re.split(' ', address, 1)
