@@ -40,7 +40,7 @@ class LWVLookup:
             elementPresent = EC.visibility_of_element_located((By.ID, 'election_district'))
             WebDriverWait(self.driver, 5).until(elementPresent)
             assembly = self.driver.find_element(By.ID, 'assembly_district').text
-            senate = self.driver.find_element(By.ID, 'assembly_district').text
+            senate = self.driver.find_element(By.ID, 'senate_district').text
             print(f"assembly {assembly} and senate {senate}")
             return assembly, senate
         except:
