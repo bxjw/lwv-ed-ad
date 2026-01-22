@@ -21,7 +21,7 @@ class LWVLookup:
         regexAlt = re.compile('[#0-9]+[a-zA-Z]*$')
         if (regex.search(address)):  # slice off apartment numbers
             cleanAddress = re.compile(
-                '(?:(?!,|Apt|APT|Apartment|#).)*'
+                '(?:(?!,|Apt|APT|Apartment|apt|#).)*'
             ).search(address).group(0)
             return re.split(' ', cleanAddress, 1)
         elif (re.search('^[pP]', address)):  # PO Box
@@ -55,7 +55,7 @@ class LWVLookup:
                 By.ID, 'assembly_district'
             ).text
             senate = self.driver.find_element(By.ID, 'senate_district').text
-            council = self.driver.find_element(By.ID, 'councile_district').text
+            council = self.driver.find_element(By.ID, 'council_district').text
             print(f"assembly {assembly}, senate {senate}, council {council}")
             return assembly, senate, council
         except:
